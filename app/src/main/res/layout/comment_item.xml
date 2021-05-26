@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <TextView
+        android:id="@+id/tv_postId"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="postId: 1"
+        android:layout_marginTop="5dp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:textColor="@color/black"/>
+    <TextView
+        android:id="@+id/tv_commentId"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="commentId: 1"
+        android:layout_marginTop="5dp"
+        app:layout_constraintTop_toBottomOf="@+id/tv_postId"
+        app:layout_constraintStart_toStartOf="parent"
+        android:textColor="@color/black"/>
+    <TextView
+        android:id="@+id/tv_commentName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PostName: id labore ex et quam laborum"
+        android:layout_marginTop="5dp"
+        android:textColor="@color/black"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_commentId"/>
+    <TextView
+        android:id="@+id/tv_commentEmail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="postEmail: Eliseo@gardner.biz"
+        android:layout_marginTop="5dp"
+        android:textColor="@color/black"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_commentName"/>
+    <TextView
+        android:id="@+id/tv_commentBody"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:text="postComment: laudantium enim quasi est quidem magnam voluptate ipsam eos\ntempora quo necessitatibus\ndolor quam autem quasi\nreiciendis et nam sapiente accusantium"
+        android:textColor="@color/black"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_commentEmail"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
