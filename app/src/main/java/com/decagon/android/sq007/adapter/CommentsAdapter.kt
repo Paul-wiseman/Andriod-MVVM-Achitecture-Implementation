@@ -1,4 +1,4 @@
-package com.decagon.android.sq007.ui.adapter
+package com.decagon.android.sq007.adapter
 
 import android.view.LayoutInflater
 import android.view.View
@@ -6,8 +6,8 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.decagon.android.sq007.R
-import com.decagon.android.sq007.repository.model.AllComments
-import com.decagon.android.sq007.repository.model.Comments
+import com.decagon.android.sq007.model.AllComments
+import com.decagon.android.sq007.model.Comment
 
 class CommentsAdapter(var comments: AllComments) : RecyclerView.Adapter<CommentsAdapter.CommentViewholder>() {
     inner class CommentViewholder(view: View) : RecyclerView.ViewHolder(view) {
@@ -16,7 +16,7 @@ class CommentsAdapter(var comments: AllComments) : RecyclerView.Adapter<Comments
         var tv_commentName: TextView = view.findViewById(R.id.tv_commentName)
         var tv_commentEmail: TextView = view.findViewById(R.id.tv_commentEmail)
         var tv_commentBody: TextView = view.findViewById(R.id.tv_commentBody)
-        fun bind(comment: Comments) {
+        fun bind(comment: Comment) {
             tv_postId.text = comment.postId.toString()
             tv_commentId.text = comment.id.toString()
             tv_commentName.text = comment.name

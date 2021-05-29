@@ -12,17 +12,24 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
+import com.decagon.android.sq007.adapter.CommentsAdapter
 import com.decagon.android.sq007.databinding.FragmentCommentsBinding
+import com.decagon.android.sq007.model.Comment
 import com.decagon.android.sq007.repository.Repository
-import com.decagon.android.sq007.ui.adapter.CommentsAdapter
 import com.decagon.android.sq007.viewmodel.CommentsFragmentViewModeFactory
 import com.decagon.android.sq007.viewmodel.CommentsFragmentViewModel
 
-class CommentsFragment : Fragment() {
+class CommentsFragment : Fragment(), AddCommentDialogFragment.UploadDialogListener {
+
     private lateinit var recyclerView: RecyclerView
     private var _binding: FragmentCommentsBinding? = null
     private val binding get() = _binding!!
     lateinit var commentsAdapter: CommentsAdapter
+
+    private val repository = Repository()
+    private val viewModelFactory = CommentsFragmentViewModeFactory(repository)
+    private val viewModel by lazy { ViewModelProvider(this, viewModelFactory).get(CommentsFragmentViewModel::class.java) }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -35,12 +42,16 @@ class CommentsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
-
-
         recyclerView = binding.rvCommentFragment
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         val decoration = DividerItemDecoration(requireContext(), StaggeredGridLayoutManager.VERTICAL)
         recyclerView.addItemDecoration(decoration)
+
+        var addCommentFab = binding.fabAddComment
+        addCommentFab.setOnClickListener { // opening a new activity on below line.
+            val fragment = AddCommentDialogFragment(this)
+            fragment.show(childFragmentManager, "addCommentDialogFragment")
+        }
 
         // Getting the value of the position of the post sent from the MainActivity
         val position = this.arguments?.getInt("position")
@@ -51,6 +62,7 @@ class CommentsFragment : Fragment() {
         if (position != null) {
             viewModel.getComments(position)
         }
+
         viewModel.commentLiveData.observe(
             viewLifecycleOwner,
             Observer { response ->
@@ -63,5 +75,9 @@ class CommentsFragment : Fragment() {
                 }
             }
         )
+    }
+
+    override fun sendComment(comment: Comment) {
+        viewModel.pushComment(comment)
     }
 }

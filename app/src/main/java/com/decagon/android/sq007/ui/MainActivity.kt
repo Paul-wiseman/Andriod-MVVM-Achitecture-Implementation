@@ -1,12 +1,13 @@
 package com.decagon.android.sq007.ui
 
+import android.net.ConnectivityManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
-import android.widget.Button
-import android.widget.EditText
 import android.widget.SearchView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -15,31 +16,40 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.decagon.android.sq007.R
+import com.decagon.android.sq007.adapter.PostRecyclerViewAdapter
 import com.decagon.android.sq007.databinding.ActivityMainBinding
+import com.decagon.android.sq007.model.Post
+import com.decagon.android.sq007.network.NetworkStatusChecker
 import com.decagon.android.sq007.repository.Repository
-import com.decagon.android.sq007.ui.adapter.PostRecyclerViewAdapter
 import com.decagon.android.sq007.viewmodel.MainActivityViewModeFactory
 import com.decagon.android.sq007.viewmodel.MainActivityViewModel
-import java.util.*
 
-class MainActivity : AppCompatActivity(), ClickListener, SearchView.OnQueryTextListener {
+@RequiresApi(Build.VERSION_CODES.M)
+class MainActivity : AppCompatActivity(), ClickListener, SearchView.OnQueryTextListener, SearchView.OnCloseListener, AddPostDialogFragment.UploadDialogListener {
+
     private lateinit var binding: ActivityMainBinding
     private lateinit var recyclerviewAdapter: PostRecyclerViewAdapter
     lateinit var recyclerview: RecyclerView
-    private lateinit var viewModel: MainActivityViewModel
-    lateinit var etSearchText: EditText
-    lateinit var btnSearch: Button
+
+    private val networkStatusChecker by lazy {
+        NetworkStatusChecker(this, getSystemService(ConnectivityManager::class.java))
+    }
+
+    private val repository = Repository()
+    private val viewModelFactory = MainActivityViewModeFactory(repository)
+    private val viewModel by lazy { ViewModelProvider(this, viewModelFactory).get(MainActivityViewModel::class.java) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
 
         var addCommentFab = binding.fabAddComment
         addCommentFab.setOnClickListener { // opening a new activity on below line.
-            val fragment = AddCommentDialogFragment()
-            fragment.show(supportFragmentManager, "addcommentDialogfragment")
+            val fragment = AddPostDialogFragment(this)
+            fragment.show(supportFragmentManager, "addPostDialogfragment")
         }
 
         // initialize recyclerview
@@ -49,55 +59,24 @@ class MainActivity : AppCompatActivity(), ClickListener, SearchView.OnQueryTextL
         // setting a decoration between each recycler view item
         val decoration = DividerItemDecoration(applicationContext, StaggeredGridLayoutManager.VERTICAL)
         recyclerview.addItemDecoration(decoration)
+        recyclerviewAdapter = PostRecyclerViewAdapter(this)
+        recyclerview.adapter = recyclerviewAdapter
+        networkStatusChecker.performIfConnectedToInternet {
+            viewModel.getPost()
+        }
 
-        val repository = Repository()
-        val viewModelFactory = MainActivityViewModeFactory(repository)
-        viewModel = ViewModelProvider(this, viewModelFactory).get(MainActivityViewModel::class.java)
-        viewModel.getPost()
         viewModel.myResponse.observe(
             this,
             Observer { response ->
                 if (response != null) {
-                    recyclerviewAdapter = PostRecyclerViewAdapter(response, this)
-                    recyclerviewAdapter.notifyDataSetChanged()
-                    recyclerview.adapter = recyclerviewAdapter
-                    Log.d("Response", response[0].userID.toString())
-                    Log.d("Response", response[0].id.toString())
-                    Log.d("Response", response[0].title)
-                    Log.d("Response", response[0].body)
+                    recyclerviewAdapter.addPost(response)
                 } else {
+                    Toast.makeText(this, "No result to display", Toast.LENGTH_SHORT).show()
                     Log.d("MainActiviy", "Empty Response")
                 }
             }
         )
-
-//        btnSearch.setOnClickListener {
-//            var number = etSearchText.text.toString()
-//
-// //            viewModel.getsearchPost(Integer.parseInt(number))
-//            viewModel.getCustomPosts(Integer.parseInt(number))
-//            viewModel.customSearchResponse.observe(
-//                this,
-//                Observer { response ->
-//                    if (response.isSuccessful) {
-//
-// //                        recyclerviewAdapter.setPost(response)
-//                    }
-//                }
-//            )
-//        }
     }
-
-//    private fun iniRecyclerView() {
-//        recyclerview.apply {
-//            layoutManager = LinearLayoutManager(this@MainActivity)
-//            adapter = recyclerviewAdapter
-//
-//            // the code below creates a division between each recycler view
-//            val decoration = DividerItemDecoration(applicationContext, StaggeredGridLayoutManager.VERTICAL)
-//            addItemDecoration(decoration)
-//        }
-//    }
 
     override fun onItemClicked(postNumber: Int) {
         var bundle = Bundle()
@@ -119,15 +98,13 @@ class MainActivity : AppCompatActivity(), ClickListener, SearchView.OnQueryTextL
         var searchView = searchViewItem?.actionView as? SearchView
         // on below line we are setting on query text listener for our search view.
 
-        searchView?.isSubmitButtonEnabled = true
+        // searchView?.isSubmitButtonEnabled = true
         searchView?.setOnQueryTextListener(this)
+        searchView?.setOnCloseListener(this)
+        searchView?.onActionViewCollapsed()
 
         return super.onCreateOptionsMenu(menu)
     }
-
-    // Override onQueryTextSubmit method
-    // which is call
-    // when submitquery is searched
 
     override fun onQueryTextSubmit(query: String?): Boolean {
         // on query submit we are clearing the focus for our search view.
@@ -137,25 +114,31 @@ class MainActivity : AppCompatActivity(), ClickListener, SearchView.OnQueryTextL
     override fun onQueryTextChange(newText: String?): Boolean {
         // on changing the text in our search view we are calling
         // a filter method to filter our array list.
-        if (newText != null) {
-            SearchLiveData(newText.toLowerCase(Locale.ROOT))
+        if (newText != null && newText.isNotEmpty()) {
+            SearchLiveData(newText.toLowerCase())
         }
-        return false
+        return true
     }
-    fun SearchLiveData(text: String) {
+
+    private fun SearchLiveData(text: String) {
         // in this method we are filtering our array list.
         // on below line we are creating a new filtered array list.
-        viewModel.getsearchPost(text)
-        viewModel.searchData.observe(
-            this,
-            Observer {
-                if (it.isEmpty()) {
-                    Toast.makeText(this, "No Result Found", Toast.LENGTH_SHORT).show()
-                } else {
-                    recyclerviewAdapter.filterList(it)
-                    recyclerviewAdapter.notifyDataSetChanged()
-                }
-            }
-        )
+        Log.d("SearchLiveDataText", "SearchLiveData:$text ")
+        Toast.makeText(this, "No Result Found", Toast.LENGTH_SHORT).show()
+        var searchResult = viewModel.getSearchPost(text)
+//        Log.d(TAG, "SearchLiveData: ")
+        Log.d("SearchResult", "$searchResult")
+        recyclerviewAdapter.updateSearch(searchResult)
+        recyclerviewAdapter.notifyDataSetChanged()
+    }
+
+    override fun onClose(): Boolean {
+        viewModel.getPost()
+        return true
+    }
+
+    override fun sendPost(post: Post) {
+        viewModel.pushPost(post)
+        recyclerviewAdapter.notifyDataSetChanged()
     }
 }
